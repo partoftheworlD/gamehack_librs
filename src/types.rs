@@ -3,34 +3,19 @@ use std::{
     ptr::{from_mut, from_ref},
 };
 
-use windows::Win32::System::{
-    Threading::{PEB, PROCESS_BASIC_INFORMATION},
-    WindowsProgramming::SYSTEM_PROCESS_INFORMATION,
-};
-
 #[repr(C)]
-//SYSTEM_INFORMATION_CLASS enum
-pub enum InfoClass {
-    ProcessBasicInformation,
-    SysProcessList = 5,
+#[derive(Debug, Clone, Default)]
+pub struct ModuleList {
+    pub module_name: String,
+    pub module_addr: usize,
+    pub module_size: usize,
 }
 
 #[repr(C)]
-pub enum Arch {
-    X86,
-    X64,
-}
-
-#[repr(C)]
-#[derive(Debug, Clone)]
-pub struct ProcessThings {
-    pub sysinfo: SYSTEM_PROCESS_INFORMATION,
-    pub procinfo: PROCESS_BASIC_INFORMATION,
-    pub name: String,
+#[derive(Debug, Clone, Default)]
+pub struct ProcessData {
     pub id: u32,
-    pub peb_ptr: *mut PEB,
-    pub base_addr: usize,
-    pub base_size: usize,
+    pub module_list: Vec<ModuleList>,
 }
 
 pub trait CastPointers<U> {

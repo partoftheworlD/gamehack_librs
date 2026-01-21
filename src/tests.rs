@@ -4,7 +4,7 @@ mod tests {
 
     #[test]
     fn found_process() {
-        assert!(!find_process("svchost.exe").unwrap().is_empty())
+        assert!(find_process("svchost.exe").is_ok())
     }
 
     #[test]

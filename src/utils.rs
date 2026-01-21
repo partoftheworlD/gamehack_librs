@@ -1,84 +1,26 @@
-use windows::{
-    Wdk::System::{
-        SystemInformation::{NtQuerySystemInformation, SYSTEM_INFORMATION_CLASS},
-        Threading::{NtQueryInformationProcess, ProcessBasicInformation},
-    },
-    Win32::{
-        Foundation::{HANDLE, HMODULE},
-        System::{
-            Diagnostics::Debug::ReadProcessMemory,
-            Memory::{MEM_FREE, MEMORY_BASIC_INFORMATION, VirtualQueryEx},
-            ProcessStatus::{EnumProcessModules, GetModuleInformation, MODULEINFO},
-            Threading::PROCESS_BASIC_INFORMATION,
-            WindowsProgramming::SYSTEM_PROCESS_INFORMATION,
-        },
+use windows::Win32::{
+    Foundation::{HANDLE, HMODULE},
+    System::{
+        Diagnostics::Debug::ReadProcessMemory,
+        Memory::{MEM_FREE, MEMORY_BASIC_INFORMATION, VirtualQueryEx},
+        ProcessStatus::{EnumProcessModules, GetModuleBaseNameA, GetModuleInformation, MODULEINFO},
     },
 };
 
-use crate::errors::Errors;
-use std::ptr::null_mut;
+use crate::types::{CastPointers, ModuleList, ProcessData};
+use std::{ffi::CStr, ptr::null_mut};
 
-pub fn get_module_information(handle: HANDLE) -> MODULEINFO {
-    let mut module_info = MODULEINFO::default();
-    let mut module = HMODULE::default();
-    unsafe {
-        let _ = EnumProcessModules(handle, &mut module, size_of::<HMODULE>() as u32, null_mut());
-
-        let _ = GetModuleInformation(
-            handle,
-            module,
-            &mut module_info,
-            size_of::<MODULEINFO>() as u32,
-        );
-    }
-    module_info
+#[must_use]
+pub fn transform_name(bytes: &[u8]) -> String {
+    CStr::from_bytes_until_nul(bytes)
+        .unwrap_or_default()
+        .to_str()
+        .unwrap_or_default()
+        .to_ascii_lowercase()
 }
 
-pub fn get_process_information(handle: HANDLE) -> PROCESS_BASIC_INFORMATION {
-    let mut pbi = PROCESS_BASIC_INFORMATION::default();
-    let _ntstatus = unsafe {
-        NtQueryInformationProcess(
-            handle,
-            ProcessBasicInformation,
-            &raw mut pbi as _,
-            size_of::<PROCESS_BASIC_INFORMATION>() as u32,
-            null_mut(),
-        )
-    };
-    pbi
-}
-
-pub fn get_system_information(
-    infoclass: &SYSTEM_INFORMATION_CLASS,
-    buffer: &mut Vec<u8>,
-    buffer_size: u32,
-) {
-    let _ntstatus = unsafe {
-        NtQuerySystemInformation(
-            *infoclass,
-            buffer.as_mut_ptr().cast(),
-            buffer_size,
-            null_mut(),
-        )
-    };
-}
-
-pub fn read_pwstr(process: &SYSTEM_PROCESS_INFORMATION) -> Result<String, Errors<'_>> {
-    if process.ImageName.Buffer.is_null() {
-        return Err(Errors::EmptyBuffer("process.ImageName.Buffer is empty"));
-    }
-    Ok(String::from_utf16_lossy(unsafe {
-        process.ImageName.Buffer.as_wide()
-    }))
-}
-
-pub fn find_signature(
-    handle: HANDLE,
-    base: usize,
-    size: usize,
-    sign: &[u8],
-    mask: &str,
-) -> usize {
+#[must_use]
+pub fn find_signature(handle: HANDLE, base: usize, size: usize, sign: &[u8], mask: &str) -> usize {
     let mut mbi = MEMORY_BASIC_INFORMATION::default();
     let mut offset = 0;
 
@@ -116,6 +58,7 @@ pub fn find_signature(
     0
 }
 
+#[must_use]
 pub fn data_compare(data: &[u8], sign: &[u8], mask: &str) -> bool {
     if data.len() < mask.len() || sign.len() < mask.len() {
         return false;
@@ -123,4 +66,47 @@ pub fn data_compare(data: &[u8], sign: &[u8], mask: &str) -> bool {
     mask.chars()
         .enumerate()
         .all(|(i, m)| m != 'x' || data[i] == sign[i])
+}
+
+pub fn process_modules(handle: HANDLE, process_data: &mut ProcessData) {
+    let mut mod_list = [HMODULE::default(); 1024];
+    let mut cb_needed = 0;
+
+    unsafe {
+        let _ = EnumProcessModules(
+            handle,
+            mod_list.as_mut_ptr() as *mut _,
+            size_of_val(&mod_list) as u32,
+            &raw mut cb_needed,
+        );
+    }
+
+    for &mod_handle in mod_list
+        .iter()
+        .take(cb_needed as usize / size_of::<HMODULE>())
+    {
+        let mut name = [0u8; 256];
+        let mut mi = MODULEINFO::default();
+
+        unsafe {
+            let _ = GetModuleBaseNameA(handle, Some(mod_handle), &mut name);
+        }
+
+        let mod_name = transform_name(&name);
+
+        unsafe {
+            let _ = GetModuleInformation(
+                handle,
+                mod_handle,
+                &raw mut mi,
+                size_of::<MODULEINFO>() as u32,
+            );
+        }
+
+        process_data.module_list.push(ModuleList {
+            module_name: mod_name,
+            module_addr: mi.lpBaseOfDll as usize,
+            module_size: mi.SizeOfImage as usize,
+        });
+    }
 }

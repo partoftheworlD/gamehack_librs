@@ -3,7 +3,7 @@
 version = 4
 
 [[package]]
-name = "gamehacking_core"
+name = "gamehack_librs"
 version = "0.1.0"
 dependencies = [
  "windows",
