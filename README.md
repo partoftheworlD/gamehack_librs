@@ -1,7 +1,7 @@
 # Rust library for creating basic external cheats
 For now that's enough to complete my money cheats for GTA 5/RP/FiveM and silent aim in HITMAN WOA
 
-## Supported:
+## ✅Supported:
 - Read/Write into memory
 - Signature scanner
 
@@ -12,13 +12,13 @@ For now that's enough to complete my money cheats for GTA 5/RP/FiveM and silent 
     let address = find_signature(handle, process.base_addr, process.base_size, sign, mask);
 ```
 
-## Plan to-Do:
-- Dll enumeration
-- Simplify syntax, get rid of the need to type unnecessary things, such as "handle" etc.
-- Get rid of unnecessary searches for additional processes
-- More tests
-- Docs
-- And something else, i forgot
+## 📝Plan to-Do:
+- [x] ~~Dll enumeration~~
+- [ ] Simplify syntax, get rid of the need to type unnecessary things, such as "handle" etc.
+- [ ] Get rid of unnecessary searches for additional processes
+- [ ] More tests
+- [ ] Docs
+- [ ] And something else, i forgot
 
 ## How to add to a project:
 ```
