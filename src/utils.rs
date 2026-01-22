@@ -75,7 +75,7 @@ pub fn process_modules(handle: HANDLE, process_data: &mut ProcessData) {
     unsafe {
         let _ = EnumProcessModules(
             handle,
-            mod_list.as_mut_ptr() as *mut _,
+            mod_list.as_mut_ptr().cast(),
             size_of_val(&mod_list) as u32,
             &raw mut cb_needed,
         );
@@ -92,8 +92,6 @@ pub fn process_modules(handle: HANDLE, process_data: &mut ProcessData) {
             let _ = GetModuleBaseNameA(handle, Some(mod_handle), &mut name);
         }
 
-        let mod_name = transform_name(&name);
-
         unsafe {
             let _ = GetModuleInformation(
                 handle,
@@ -104,7 +102,7 @@ pub fn process_modules(handle: HANDLE, process_data: &mut ProcessData) {
         }
 
         process_data.module_list.push(ModuleList {
-            module_name: mod_name,
+            module_name: transform_name(&name),
             module_addr: mi.lpBaseOfDll as usize,
             module_size: mi.SizeOfImage as usize,
         });

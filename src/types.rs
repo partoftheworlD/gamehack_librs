@@ -1,7 +1,9 @@
 use std::{
-    os::raw::c_void,
+    ffi::c_void,
     ptr::{from_mut, from_ref},
 };
+
+use windows::Win32::Foundation::HANDLE;
 
 #[repr(C)]
 #[derive(Debug, Clone, Default)]
@@ -14,6 +16,7 @@ pub struct ModuleList {
 #[repr(C)]
 #[derive(Debug, Clone, Default)]
 pub struct ProcessData {
+    pub handle: HANDLE,
     pub id: u32,
     pub module_list: Vec<ModuleList>,
 }
