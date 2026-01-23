@@ -3,7 +3,7 @@ mod tests;
 pub mod types;
 pub mod utils;
 
-use std::ptr::{self, addr_of_mut};
+use std::ptr::{self, addr_of, addr_of_mut};
 
 use windows::{
     Win32::{
@@ -20,7 +20,7 @@ use windows::{
 use errors::Errors;
 use types::ProcessData;
 
-use crate::utils::{process_modules, transform_name};
+use crate::utils::{TransformName, process_modules};
 
 pub fn get_process_handle(pid: u32) -> Result<HANDLE, Error> {
     unsafe { OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_ALL_ACCESS, false, pid) }
@@ -41,7 +41,7 @@ pub fn find_process(process_name: &str) -> Result<ProcessData, Errors<'_>> {
         let _ = EnumProcesses(
             pid_list.as_mut_ptr().cast(),
             size_of_val(&pid_list) as u32,
-            &raw mut cb_needed,
+            addr_of_mut!(cb_needed),
         );
     }
 
@@ -56,7 +56,7 @@ pub fn find_process(process_name: &str) -> Result<ProcessData, Errors<'_>> {
                 let _ = GetModuleBaseNameA(handle, Some(hmod), &mut module_name);
             }
 
-            if transform_name(&module_name) == process_name.to_ascii_lowercase() {
+            if module_name.to_string_lowercase() == process_name.to_ascii_lowercase() {
                 process_data.handle = handle;
                 process_data.id = pid;
                 process_modules(handle, &mut process_data);
@@ -88,7 +88,7 @@ pub fn read<T: Copy>(handle: HANDLE, addr: usize, offsets: &[u32], buffer: *mut 
             let _ = ReadProcessMemory(
                 handle,
                 (next_addr.wrapping_add(offset as usize)) as *const _,
-                (&raw mut next_addr).cast(),
+                addr_of_mut!(next_addr).cast(),
                 size,
                 None,
             );
@@ -102,7 +102,7 @@ pub fn write<T: Copy>(handle: HANDLE, addr: usize, value: &T) {
         let _ = WriteProcessMemory(
             handle,
             addr as *const _,
-            (&raw const value).cast(),
+            addr_of!(value).cast(),
             size_of::<T>(),
             None,
         );

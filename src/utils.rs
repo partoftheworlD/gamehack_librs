@@ -11,18 +11,22 @@ use crate::{
     errors::Errors,
     types::{ModuleList, ProcessData},
 };
-use std::{ffi::CStr, ptr::null_mut};
+use std::{ffi::CStr, ptr::{addr_of_mut, null_mut}};
 
-#[must_use]
-pub fn transform_name(bytes: &[u8]) -> String {
-    CStr::from_bytes_until_nul(bytes)
-        .unwrap_or_default()
-        .to_str()
-        .unwrap_or_default()
-        .to_ascii_lowercase()
+pub trait TransformName {
+    fn to_string_lowercase(&self) -> String;
 }
 
-#[must_use]
+impl TransformName for [u8] {
+    fn to_string_lowercase(&self) -> String {
+        CStr::from_bytes_until_nul(self)
+            .unwrap_or_default()
+            .to_str()
+            .unwrap_or_default()
+            .to_ascii_lowercase()
+    }
+}
+
 pub fn find_signature<'a>(
     handle: HANDLE,
     base: usize,
@@ -39,7 +43,7 @@ pub fn find_signature<'a>(
             VirtualQueryEx(
                 handle,
                 Some(address),
-                &raw mut mbi,
+                addr_of_mut!(mbi),
                 size_of::<MEMORY_BASIC_INFORMATION>(),
             );
 
@@ -86,7 +90,7 @@ pub fn process_modules(handle: HANDLE, process_data: &mut ProcessData) {
             handle,
             mod_list.as_mut_ptr().cast(),
             size_of_val(&mod_list) as u32,
-            &raw mut cb_needed,
+            addr_of_mut!(cb_needed),
         );
     }
 
@@ -105,13 +109,13 @@ pub fn process_modules(handle: HANDLE, process_data: &mut ProcessData) {
             let _ = GetModuleInformation(
                 handle,
                 mod_handle,
-                &raw mut mi,
+                addr_of_mut!(mi),
                 size_of::<MODULEINFO>() as u32,
             );
         }
 
         process_data.module_list.push(ModuleList {
-            module_name: transform_name(&name),
+            module_name: name.to_string_lowercase(),
             module_addr: mi.lpBaseOfDll as usize,
             module_size: mi.SizeOfImage as usize,
         });
