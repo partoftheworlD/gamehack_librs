@@ -8,22 +8,23 @@ use windows::Win32::{
 };
 
 use crate::{
-    errors::Errors,
+    errors::{Errors},
     types::{ModuleList, ProcessData},
 };
-use std::{ffi::CStr, ptr::{addr_of_mut, null_mut}};
+use std::{
+    ffi::CStr,
+    ptr::{addr_of_mut, null_mut},
+};
 
 pub trait TransformName {
-    fn to_string_lowercase(&self) -> String;
+    fn to_string_lowercase(&self) -> Result<String, Errors<'_>>;
 }
 
 impl TransformName for [u8] {
-    fn to_string_lowercase(&self) -> String {
-        CStr::from_bytes_until_nul(self)
-            .unwrap_or_default()
-            .to_str()
-            .unwrap_or_default()
-            .to_ascii_lowercase()
+    fn to_string_lowercase(&self) -> Result<String, Errors<'_>> {
+        Ok(CStr::from_bytes_until_nul(self)?
+            .to_str()?
+            .to_ascii_lowercase())
     }
 }
 
@@ -115,7 +116,9 @@ pub fn process_modules(handle: HANDLE, process_data: &mut ProcessData) {
         }
 
         process_data.module_list.push(ModuleList {
-            module_name: name.to_string_lowercase(),
+            module_name: name
+                .to_string_lowercase()
+                .unwrap_or("<Module Name>".to_string()),
             module_addr: mi.lpBaseOfDll as usize,
             module_size: mi.SizeOfImage as usize,
         });

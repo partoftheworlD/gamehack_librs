@@ -56,7 +56,11 @@ pub fn find_process(process_name: &str) -> Result<ProcessData, Errors<'_>> {
                 let _ = GetModuleBaseNameA(handle, Some(hmod), &mut module_name);
             }
 
-            if module_name.to_string_lowercase() == process_name.to_ascii_lowercase() {
+            if module_name
+                .to_string_lowercase()
+                .unwrap_or("<Module Name>".to_string())
+                == process_name.to_ascii_lowercase()
+            {
                 process_data.handle = handle;
                 process_data.id = pid;
                 process_modules(handle, &mut process_data);
