@@ -15,7 +15,7 @@ For now that's enough to complete my money cheats for GTA 5/RP/FiveM and silent 
 ## 📝Plan to-Do:
 - [x] ~~Dll enumeration~~
 - [ ] Simplify syntax, get rid of the need to type unnecessary things, such as "handle" etc.
-- [ ] Get rid of unnecessary searches for additional processes
+- [x] ~~Get rid of unnecessary searches for additional processes~~
 - [ ] More tests
 - [ ] Docs
 - [ ] And something else, i forgot
