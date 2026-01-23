@@ -20,10 +20,7 @@ use windows::{
 use errors::Errors;
 use types::ProcessData;
 
-use crate::{
-    types::CastPointers,
-    utils::{process_modules, transform_name},
-};
+use crate::utils::{process_modules, transform_name};
 
 pub fn get_process_handle(pid: u32) -> Result<HANDLE, Error> {
     unsafe { OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_ALL_ACCESS, false, pid) }
@@ -59,9 +56,7 @@ pub fn find_process(process_name: &str) -> Result<ProcessData, Errors<'_>> {
                 let _ = GetModuleBaseNameA(handle, Some(hmod), &mut module_name);
             }
 
-            let name = transform_name(&module_name);
-
-            if name == process_name.to_ascii_lowercase() {
+            if transform_name(&module_name) == process_name.to_ascii_lowercase() {
                 process_data.handle = handle;
                 process_data.id = pid;
                 process_modules(handle, &mut process_data);
@@ -78,50 +73,37 @@ pub fn find_process(process_name: &str) -> Result<ProcessData, Errors<'_>> {
 
 pub fn read<T: Copy>(handle: HANDLE, addr: usize, offsets: &[u32], buffer: *mut T) {
     let size = size_of::<usize>();
+    let mut next_addr = 0usize;
 
-    if offsets.is_empty() {
-        unsafe {
-            let _ = ReadProcessMemory(handle, addr as *const _, buffer.cast(), size, None);
-        }
-    } else {
-        let mut next_addr = 0usize;
+    unsafe {
+        let _ = ReadProcessMemory(
+            handle,
+            addr as *const _,
+            addr_of_mut!(next_addr).cast(),
+            size,
+            None,
+        );
 
-        unsafe {
+        for &offset in offsets {
             let _ = ReadProcessMemory(
                 handle,
-                addr as *const _,
-                addr_of_mut!(next_addr).cast(),
+                (next_addr.wrapping_add(offset as usize)) as *const _,
+                (&raw mut next_addr).cast(),
                 size,
                 None,
             );
         }
-
-        for &offset in offsets {
-            unsafe {
-                let _ = ReadProcessMemory(
-                    handle,
-                    (next_addr.wrapping_add(offset as usize)) as *const _,
-                    (&raw mut next_addr).cast(),
-                    size,
-                    None,
-                );
-            }
-        }
-        unsafe {
-            ptr::write(buffer.cast(), next_addr);
-        }
+        ptr::write(buffer.cast(), next_addr);
     }
 }
 
 pub fn write<T: Copy>(handle: HANDLE, addr: usize, value: &T) {
-    let size = size_of::<T>();
-
     unsafe {
         let _ = WriteProcessMemory(
             handle,
             addr as *const _,
             (&raw const value).cast(),
-            size,
+            size_of::<T>(),
             None,
         );
     }

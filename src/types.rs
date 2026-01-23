@@ -1,8 +1,3 @@
-use std::{
-    ffi::c_void,
-    ptr::{from_mut, from_ref},
-};
-
 use windows::Win32::Foundation::HANDLE;
 
 #[repr(C)]
@@ -19,31 +14,4 @@ pub struct ProcessData {
     pub handle: HANDLE,
     pub id: u32,
     pub module_list: Vec<ModuleList>,
-}
-
-pub trait CastPointers<U> {
-    #[inline]
-    #[allow(dead_code)]
-    fn as_ptr(&self) -> *const U {
-        from_ref(self).cast()
-    }
-
-    #[inline]
-    fn as_mut_ptr(&mut self) -> *mut U {
-        from_mut(self).cast()
-    }
-}
-
-impl<T> CastPointers<c_void> for T {}
-
-impl CastPointers<usize> for usize {
-    #[inline]
-    fn as_ptr(&self) -> *const usize {
-        *self as *const _
-    }
-
-    #[inline]
-    fn as_mut_ptr(&mut self) -> *mut usize {
-        *self as *mut _
-    }
 }

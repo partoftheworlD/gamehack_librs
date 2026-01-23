@@ -5,6 +5,7 @@ use std::fmt::Display;
 pub enum Errors<'src> {
     EmptyBuffer(&'src str),
     ProcessNotFound,
+    SignatureNotFound,
 }
 
 impl Display for Errors<'_> {
@@ -12,6 +13,7 @@ impl Display for Errors<'_> {
         let message = match &self {
             Errors::EmptyBuffer(error) => error,
             Errors::ProcessNotFound => "Process not found!",
+            Errors::SignatureNotFound => "Signature not found!",
         };
         write!(f, "Error: {message}")
     }

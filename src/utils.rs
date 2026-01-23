@@ -7,7 +7,10 @@ use windows::Win32::{
     },
 };
 
-use crate::types::{CastPointers, ModuleList, ProcessData};
+use crate::{
+    errors::Errors,
+    types::{ModuleList, ProcessData},
+};
 use std::{ffi::CStr, ptr::null_mut};
 
 #[must_use]
@@ -20,7 +23,13 @@ pub fn transform_name(bytes: &[u8]) -> String {
 }
 
 #[must_use]
-pub fn find_signature(handle: HANDLE, base: usize, size: usize, sign: &[u8], mask: &str) -> usize {
+pub fn find_signature<'a>(
+    handle: HANDLE,
+    base: usize,
+    size: usize,
+    sign: &'a [u8],
+    mask: &'a str,
+) -> Result<usize, Errors<'a>> {
     let mut mbi = MEMORY_BASIC_INFORMATION::default();
     let mut offset = 0;
 
@@ -48,14 +57,14 @@ pub fn find_signature(handle: HANDLE, base: usize, size: usize, sign: &[u8], mas
 
                 for i in 0..region_size {
                     if data_compare(&buffer[i..], sign, mask) {
-                        return (mbi.BaseAddress as usize).wrapping_add(i);
+                        return Ok((mbi.BaseAddress as usize).wrapping_add(i));
                     }
                 }
             }
         }
         offset += mbi.RegionSize;
     }
-    0
+    Err(Errors::SignatureNotFound)
 }
 
 #[must_use]
