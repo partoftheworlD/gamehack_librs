@@ -8,7 +8,7 @@ use windows::Win32::{
 };
 
 use crate::{
-    errors::{Errors},
+    errors::Errors,
     types::{ModuleList, ProcessData},
 };
 use std::{
@@ -60,10 +60,11 @@ pub fn find_signature<'a>(
                     Some(null_mut()),
                 );
 
-                for i in 0..region_size {
-                    if data_compare(&buffer[i..], sign, mask) {
-                        return Ok((mbi.BaseAddress as usize).wrapping_add(i));
-                    }
+                if let Some(offset) = buffer
+                    .windows(sign.len())
+                    .position(|buffer| data_compare(buffer, sign, mask))
+                {
+                    return Ok((mbi.BaseAddress as usize).wrapping_add(offset));
                 }
             }
         }
@@ -79,7 +80,7 @@ pub fn data_compare(data: &[u8], sign: &[u8], mask: &str) -> bool {
     }
     mask.chars()
         .enumerate()
-        .all(|(i, m)| m != 'x' || data[i] == sign[i])
+        .all(|(idx, c)| c != 'x' || data[idx] == sign[idx])
 }
 
 pub fn process_modules(handle: HANDLE, process_data: &mut ProcessData) {
@@ -104,9 +105,6 @@ pub fn process_modules(handle: HANDLE, process_data: &mut ProcessData) {
 
         unsafe {
             let _ = GetModuleBaseNameA(handle, Some(mod_handle), &mut name);
-        }
-
-        unsafe {
             let _ = GetModuleInformation(
                 handle,
                 mod_handle,

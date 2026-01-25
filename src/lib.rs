@@ -45,26 +45,29 @@ pub fn find_process(process_name: &str) -> Result<ProcessData, Errors<'_>> {
         );
     }
 
-    for &pid in pid_list.iter().take(cb_needed as usize / size_of::<u32>()) {
-        if pid != 0
-            && let Ok(handle) = get_process_handle(pid)
+    let limit = cb_needed as usize / size_of::<u32>();
+
+    for (pid, handle) in pid_list
+        .iter()
+        .take(limit)
+        .filter(|&&pid| pid != 0)
+        .filter_map(|&pid| get_process_handle(pid).ok().map(|h| (pid, h)))
+    {
+        let hmod = HMODULE::default();
+        let mut module_name = [0u8; 256];
+
+        unsafe {
+            let _ = GetModuleBaseNameA(handle, Some(hmod), &mut module_name);
+        }
+
+        if module_name
+            .to_string_lowercase()
+            .unwrap_or("<Module Name>".to_string())
+            == process_name.to_ascii_lowercase()
         {
-            let hmod = HMODULE::default();
-            let mut module_name = [0u8; 256];
-
-            unsafe {
-                let _ = GetModuleBaseNameA(handle, Some(hmod), &mut module_name);
-            }
-
-            if module_name
-                .to_string_lowercase()
-                .unwrap_or("<Module Name>".to_string())
-                == process_name.to_ascii_lowercase()
-            {
-                process_data.handle = handle;
-                process_data.id = pid;
-                process_modules(handle, &mut process_data);
-            }
+            process_data.handle = handle;
+            process_data.id = pid;
+            process_modules(handle, &mut process_data);
         }
     }
 
