@@ -18,10 +18,8 @@ use windows::{
 };
 
 use errors::Errors;
-use types::ProcessData;
-
-use crate::types::TransformName;
-use crate::utils::process_modules;
+use types::{ProcessData, TransformName};
+use utils::process_modules;
 
 pub fn get_process_handle(pid: u32) -> Result<HANDLE, Error> {
     unsafe { OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_ALL_ACCESS, false, pid) }
@@ -68,7 +66,7 @@ pub fn find_process(process_name: &str) -> Result<ProcessData<String>, Errors<'_
         {
             process_data.handle = handle;
             process_data.id = pid;
-            process_modules(handle, &mut process_data);
+            process_modules(&mut process_data);
         }
     }
 

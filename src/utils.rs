@@ -70,9 +70,10 @@ pub fn data_compare(data: &[u8], sign: &[u8], mask: &str) -> bool {
         .all(|(idx, c)| c != 'x' || data[idx] == sign[idx])
 }
 
-pub fn process_modules(handle: HANDLE, process_data: &mut ProcessData<String>) {
+pub fn process_modules(process_data: &mut ProcessData<String>) {
     let mut mod_list = [HMODULE::default(); 1024];
     let mut cb_needed = 0;
+    let handle = process_data.handle;
 
     unsafe {
         let _ = EnumProcessModules(
@@ -103,6 +104,7 @@ pub fn process_modules(handle: HANDLE, process_data: &mut ProcessData<String>) {
         let name = name
             .to_string_lowercase()
             .unwrap_or("<Module Name>".to_string());
+
         process_data.module_list.insert(
             name.clone(),
             ModuleData {
