@@ -34,51 +34,61 @@ fn main() {
     match find_process("hitman3.exe") {
         Ok(process) => {
             // Get address and size of exe
-            let base = process.module_list.first().unwrap().module_addr;
-            let base_size = process.module_list.first().unwrap().module_size;
+            if let Some(exe) = process.module_list.get("hitman3.exe") {
+                let base = exe.module_addr;
+                let base_size = exe.module_size;
 
-            let mut ptr_phitman_vft = 0usize;
-            // Reading multilevel pointer:
-            // ["hitman3.exe"+022BAF18] + 0x18
-            read(
-                process.handle,
-                base + 0x022BAF18,
-                &[0x18],
-                &raw mut ptr_phitman_vft,
-            );
+                let mut ptr_phitman_vft = 0usize;
 
-            println!("Hitman VFT: {ptr_phitman_vft:X}");
+                // Reading multilevel pointer:
+                // ["hitman3.exe"+022BAF18] + 0x18
 
-            // Find signature
-            // .text:00000001402D9A0F 48 8D 05 **7A B9 A6 01**       lea     rax, ??_7ZHitman5@@6B@_0 ; const ZHitman5::`vftable'
-            // .text:00000001402D9A16 48 89 41 18                    mov     [rcx+18h], rax
-            // .text:00000001402D9A1A 49 BF 00 00 00 00 00 00        mov     r15, 4000000000000000h
-            // .text:00000001402D9A1A 00 40
+                read(
+                    process.handle,
+                    base + 0x022BAF18,
+                    &[0x18],
+                    &raw mut ptr_phitman_vft,
+                );
+                println!("Hitman VFT: {ptr_phitman_vft:X}");
 
-            let phitman_vft = find_signature(
-                process.handle,
-                base,
-                base_size,
-                b"\x48\x8D\x05\x7A\xB9\xA6\x01\x48\x89\x41\x18\x49\xBF",
-                "xxx????xxxxxx",
-            )
-            .unwrap() + 3;
+                // Find signature
+                // .text:00000001402D9A0F 48 8D 05 **7A B9 A6 01**       lea     rax, ??_7ZHitman5@@6B@_0 ; const ZHitman5::`vftable'
+                // .text:00000001402D9A16 48 89 41 18                    mov     [rcx+18h], rax
+                // .text:00000001402D9A1A 49 BF 00 00 00 00 00 00        mov     r15, 4000000000000000h
+                // .text:00000001402D9A1A 00 40
 
-            let mut pointer = 0u32;
+                let phitman_vft = find_signature(
+                    process.handle,
+                    base,
+                    base_size,
+                    b"\x48\x8D\x05\x7A\xB9\xA6\x01\x48\x89\x41\x18\x49\xBF",
+                    "xxx????xxxxxx",
+                )
+                .unwrap();
 
-            // Reading an address without offsets to get RVA of ZHitman5::`vftable':
-            // phitman_vft + 3
-            read(process.handle, phitman_vft, &[], &raw mut pointer);
+                let mut pointer = 0u32;
+                let byte_shift = 3;
 
-            println!(
-                "Sign found: {:X} -> {:X}",
-                phitman_vft,
-                phitman_vft + size_of::<u32>() + pointer as usize
-            );
+                // Reading an address without offsets to get RVA of ZHitman5::`vftable':
+                // phitman_vft + 3
 
-            // OUTPUT:
-            // Hitman VFT: 141D45390
-            // Sign found: 1402D9A12 -> 141D45390
+                read(
+                    process.handle,
+                    phitman_vft + byte_shift,
+                    &[],
+                    &raw mut pointer,
+                );
+
+                // OUTPUT:
+                // Hitman VFT: 141D45390
+                // Sign found: 1402D9A12 -> 141D45390
+
+                println!(
+                    "Sign found: {:X} -> {:X}",
+                    phitman_vft + byte_shift,
+                    phitman_vft + byte_shift + size_of_val(&pointer) + pointer as usize
+                );
+            }
 
             // You must close handle until this library starts using OwnedHandle
             close_handle(process.handle);
