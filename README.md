@@ -4,6 +4,7 @@ For now that's enough to complete my money cheats for GTA 5/RP/FiveM and silent 
 ## ✅Supported:
 - Read/Write into memory
 - Signature scanner
+- Access processes modules by name
 
 ```rust
     let sign = b"\x48\x8D\x05\x7A\xB9\xA6\x01\x48\x89\x41\x18\x49\xBF\x00\x00\x00\x00\x00\x00";
