@@ -20,7 +20,8 @@ use windows::{
 use errors::Errors;
 use types::ProcessData;
 
-use crate::utils::{TransformName, process_modules};
+use crate::types::TransformName;
+use crate::utils::process_modules;
 
 pub fn get_process_handle(pid: u32) -> Result<HANDLE, Error> {
     unsafe { OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_ALL_ACCESS, false, pid) }
@@ -32,7 +33,7 @@ pub fn close_handle(handle: HANDLE) {
     }
 }
 
-pub fn find_process(process_name: &str) -> Result<ProcessData, Errors<'_>> {
+pub fn find_process(process_name: &str) -> Result<ProcessData<String>, Errors<'_>> {
     let mut pid_list = [0u32; 1024];
     let mut cb_needed = 0;
     let mut process_data = ProcessData::default();

@@ -9,24 +9,11 @@ use windows::Win32::{
 
 use crate::{
     errors::Errors,
-    types::{ModuleList, ProcessData},
+    types::{ModuleData, ProcessData},
 };
-use std::{
-    ffi::CStr,
-    ptr::{addr_of_mut, null_mut},
-};
+use std::ptr::{addr_of_mut, null_mut};
 
-pub trait TransformName {
-    fn to_string_lowercase(&self) -> Result<String, Errors<'_>>;
-}
-
-impl TransformName for [u8] {
-    fn to_string_lowercase(&self) -> Result<String, Errors<'_>> {
-        Ok(CStr::from_bytes_until_nul(self)?
-            .to_str()?
-            .to_ascii_lowercase())
-    }
-}
+use crate::types::TransformName;
 
 pub fn find_signature<'a>(
     handle: HANDLE,
@@ -83,7 +70,7 @@ pub fn data_compare(data: &[u8], sign: &[u8], mask: &str) -> bool {
         .all(|(idx, c)| c != 'x' || data[idx] == sign[idx])
 }
 
-pub fn process_modules(handle: HANDLE, process_data: &mut ProcessData) {
+pub fn process_modules(handle: HANDLE, process_data: &mut ProcessData<String>) {
     let mut mod_list = [HMODULE::default(); 1024];
     let mut cb_needed = 0;
 
@@ -113,12 +100,16 @@ pub fn process_modules(handle: HANDLE, process_data: &mut ProcessData) {
             );
         }
 
-        process_data.module_list.push(ModuleList {
-            module_name: name
-                .to_string_lowercase()
-                .unwrap_or("<Module Name>".to_string()),
-            module_addr: mi.lpBaseOfDll as usize,
-            module_size: mi.SizeOfImage as usize,
-        });
+        let name = name
+            .to_string_lowercase()
+            .unwrap_or("<Module Name>".to_string());
+        process_data.module_list.insert(
+            name.clone(),
+            ModuleData {
+                module_name: name,
+                module_addr: mi.lpBaseOfDll as usize,
+                module_size: mi.SizeOfImage as usize,
+            },
+        );
     }
 }
