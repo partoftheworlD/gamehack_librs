@@ -47,7 +47,7 @@ fn main() {
                 &raw mut ptr_phitman_vft,
             );
 
-            println!("ptr_phitman_vft: {ptr_phitman_vft:X}");
+            println!("Hitman VFT: {ptr_phitman_vft:X}");
 
             // Find signature
             // .text:00000001402D9A0F 48 8D 05 **7A B9 A6 01**       lea     rax, ??_7ZHitman5@@6B@_0 ; const ZHitman5::`vftable'
