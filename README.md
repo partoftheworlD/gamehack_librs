@@ -8,7 +8,7 @@ For now that's enough to complete my money cheats for GTA 5/RP/FiveM and silent 
 
 ## 📝Plan to-Do:
 - [x] ~~Dll enumeration~~
-- [ ] Replace HANDLE with OwnedHandle to get rid of CloseHandle
+- [ ] Replace HANDLE with OwnedHandle to get rid of CloseHandle or Implement Drop for HANDLE
 - [ ] Simplify syntax, get rid of the need to type unnecessary things, such as "handle" etc.
 - [x] ~~Get rid of unnecessary searches for additional processes~~
 - [ ] More tests
