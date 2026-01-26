@@ -12,7 +12,7 @@ For now that's enough to complete my money cheats for GTA 5/RP/FiveM and silent 
 - [ ] Simplify syntax, get rid of the need to type unnecessary things, such as "handle" etc.
 - [x] ~~Get rid of unnecessary searches for additional processes~~
 - [ ] More tests
-- [ ] Docs
+- [x] ~~Docs~~
 - [ ] And something else, i forgot
 
 ## 🚀How to add to a project:
