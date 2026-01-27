@@ -18,7 +18,7 @@ use crate::types::TransformName;
 /// Searches for a byte pattern (signature) within a specific memory range of a process.
 ///
 /// This function iterates through memory regions of a target process using [`VirtualQueryEx`],
-/// reads non-free memory segments, and attempts to find a match for a provided byte 
+/// reads non-free memory segments, and attempts to find a match for a provided byte
 /// signature and mask.
 ///
 /// # Arguments
@@ -41,9 +41,9 @@ use crate::types::TransformName;
 /// 3. **Comparison**: Uses `data_compare` (internally) to evaluate the signature against the buffer using the provided mask.
 ///
 /// # Performance Warning
-/// 
+///
 /// This function allocates a `Vec<u8>` the size of each memory region (often 4KB or more) per iteration. For very large search ranges, this may cause significant temporary memory pressure
-/// 
+///
 pub fn find_signature<'a>(
     handle: HANDLE,
     base: usize,
@@ -99,7 +99,7 @@ pub fn find_signature<'a>(
 ///
 /// * `data` - The actual memory bytes to check.
 /// * `sign` - The pattern bytes to match against.
-/// * `mask` - A string where `'x'` denotes an exact match and any other character 
+/// * `mask` - A string where `'x'` denotes an exact match and any other character
 ///   (usually `'?'`) denotes a wildcard.
 ///
 /// # Returns
@@ -118,27 +118,27 @@ pub fn data_compare(data: &[u8], sign: &[u8], mask: &str) -> bool {
 
 /// Populates the provided [`ProcessData`] with a list of all loaded modules.
 ///
-/// This function enumerates all modules (DLLs and the main executable) within 
-/// the context of the process identified by the handle in `process_data`. It 
+/// This function enumerates all modules (DLLs and the main executable) within
+/// the context of the process identified by the handle in `process_data`. It
 /// gathers the name, base address, and image size for each module.
 ///
 /// # Arguments
 ///
-/// * `process_data` - A mutable reference to a [`ProcessData`] struct. The 
-///   `handle` field must be a valid process handle with `PROCESS_QUERY_INFORMATION` 
+/// * `process_data` - A mutable reference to a [`ProcessData`] struct. The
+///   `handle` field must be a valid process handle with `PROCESS_QUERY_INFORMATION`
 ///   and `PROCESS_VM_READ` access.
 ///
 /// # Behavior
 ///
 /// 1. **Enumeration**: Calls `EnumProcessModules` to retrieve up to 1024 module handles.
-/// 2. **Metadata Collection**: For each module, it queries the base name via 
+/// 2. **Metadata Collection**: For each module, it queries the base name via
 ///    `GetModuleBaseNameA` and memory information via `GetModuleInformation`.
-/// 3. **State Mutation**: Updates the `module_list` hash map within the `process_data` 
+/// 3. **State Mutation**: Updates the `module_list` hash map within the `process_data`
 ///    struct. Module names are normalized to lowercase.
 ///
 /// # Safety
 ///
-/// This function internally uses `unsafe` blocks to interface with the Windows API. 
+/// This function internally uses `unsafe` blocks to interface with the Windows API.
 /// It assumes the `process_data.handle` is valid and has not been closed.
 ///
 pub fn process_modules(process_data: &mut ProcessData<String>) {
