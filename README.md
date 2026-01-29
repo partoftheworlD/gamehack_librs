@@ -41,7 +41,7 @@ fn main() {
                     process.handle,
                     base + 0x022BAF18,
                     &[0x18],
-                    &raw mut ptr_phitman_vft,
+                    &mut ptr_phitman_vft,
                 );
                 println!("Hitman VFT: {ptr_phitman_vft:X}");
 
@@ -70,7 +70,7 @@ fn main() {
                     process.handle,
                     phitman_vft + byte_shift,
                     &[],
-                    &raw mut pointer,
+                    &mut pointer,
                 );
 
                 // OUTPUT:
