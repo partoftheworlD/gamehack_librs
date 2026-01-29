@@ -165,35 +165,33 @@ pub fn find_process(process_name: &str) -> Result<ProcessData<String>, Errors<'_
     }
 }
 
-/// Performs a multi-level pointer traversal and reads the final value into a buffer.
+/// Performs a multi-level pointer traversal and reads the final value into a provided buffer.
 ///
-/// This function follows a chain of pointers starting from a base `addr`,
-/// applying a sequence of `offsets`, and finally writing the resulting address
-/// (or value) into the provided `buffer`.
+/// This function follows a chain of pointers starting from the base `addr`,
+/// sequentially applying a series of `offsets`. The value found at the final
+/// resolved address is copied into the `buffer`.
 ///
 /// # Arguments
 ///
 /// * `handle` - A valid [`HANDLE`] to the target process with `PROCESS_VM_READ` access.
 /// * `addr` - The initial base address to start the pointer chain.
-/// * `offsets` - A slice of [`u32`] offsets to be applied sequentially during traversal.
-/// * `buffer` - A raw pointer to a location of type `T` where the final address will be written.
+/// * `offsets` - A slice of [`u32`] offsets applied sequentially during traversal.
+/// * `buffer` - A mutable reference to a value of type `T` where the final result will be stored.
 ///
 /// # Traversal Logic
 ///
-/// 1. Reads a `usize` from `addr` into an internal temporary address.
-/// 2. For each `offset` in `offsets`:
-///    - Adds the offset to the temporary address (using wrapping addition).
-///    - Reads the next `usize` from that location.
-/// 3. Finally, writes the last resolved address into `buffer`.
+/// 1. **Initial Seed**: Reads a `usize` value from the base `addr` to establish the starting pointer.
+/// 2. **Offset Chain**: For each `offset` in `offsets`:
+///    - Calculates the next target address using `wrapping_add` of the `offset`.
+///    - Reads a chunk of memory of size **`size_of::<T>()`** from that address to update the internal pointer.
+/// 3. **Finalization**: Copies the last resolved value into the `buffer` using non-overlapping memory copy.
 ///
 /// # Safety
 ///
-/// This function is **high-risk** and marked `pub` despite containing an `unsafe` block:
-/// * **Pointer Dereferencing**: It assumes that every step in the chain results in a readable memory location. If any pointer in the chain is invalid, `ReadProcessMemory` will fail, and the function will continue with stale data.
-/// * **Buffer Validity**: The caller must ensure that `buffer` points to valid, initialized memory capable of holding a value of type `T`.
-/// * **Type Size**: Note that this function specifically reads `size_of::<usize>()` at each step, regardless of the size of `T`.
+/// This function is **high-risk** as it performs raw memory manipulation:
+/// * **Pointer Validity**: The caller must ensure that every step in the offset chain results in a readable memory location within the target process.
 ///
-pub fn read<T: Copy + Sized>(handle: HANDLE, addr: usize, offsets: &[u32], buffer: *mut T) {
+pub fn read<T: Copy>(handle: HANDLE, addr: usize, offsets: &[u32], buffer: &mut T) {
     let size = size_of::<usize>();
     let mut next_addr = 0usize;
 
@@ -211,11 +209,16 @@ pub fn read<T: Copy + Sized>(handle: HANDLE, addr: usize, offsets: &[u32], buffe
                 handle,
                 (next_addr.wrapping_add(offset as usize)) as *const _,
                 addr_of_mut!(next_addr).cast(),
-                size,
+                size_of::<T>(),
                 None,
             );
         }
-        ptr::write(buffer.cast(), next_addr);
+
+        ptr::copy_nonoverlapping(
+            (addr_of!(next_addr)).cast::<u8>(),
+            ptr::from_mut(buffer).cast(),
+            size_of::<T>(),
+        );
     }
 }
 
