@@ -34,6 +34,8 @@ use utils::process_modules;
 /// # Returns
 ///
 /// * `Ok(HANDLE)` - A valid, open handle to the process if successful.
+/// 
+/// # Errors
 /// * `Err(Error)` - An error indicating failure, such as if the process does not exist
 ///   or the current user lacks sufficient privileges (e.g., `ERROR_ACCESS_DENIED`).
 ///
@@ -102,6 +104,8 @@ pub fn close_handle(handle: HANDLE) {
 ///
 /// * `Ok(ProcessData<String>)` - Contains the handle, PID, and module list
 ///   of the found process.
+/// 
+/// # Errors
 /// * `Err(Errors::ProcessNotFound)` - Returned if no process matches the name
 ///   or if the matching process could not be opened.
 ///
