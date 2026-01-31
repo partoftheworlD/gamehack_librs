@@ -87,7 +87,7 @@ fn main() {
             // You must close handle until this library starts using OwnedHandle
             close_handle(process.handle);
         }
-        Err(why) => println!("{why}"),
+        Err(why) => eprintln!("{why}"),
     }
 }
 ```

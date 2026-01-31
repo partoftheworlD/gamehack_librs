@@ -1,5 +1,7 @@
 use std::{ffi::FromBytesUntilNulError, fmt::Display, num::TryFromIntError, str::Utf8Error};
 
+use windows::core::HRESULT;
+
 #[repr(C)]
 #[derive(Debug, PartialEq, Eq)]
 /// Enum full of errors :c
@@ -10,6 +12,7 @@ pub enum Errors<'src> {
     NoNulByte(FromBytesUntilNulError),
     InvalidUtf8(Utf8Error),
     IntError(TryFromIntError),
+    AccessDenied(HRESULT),
 }
 
 /// Provides a human-readable representation of [`Errors`].
@@ -30,6 +33,9 @@ impl Display for Errors<'_> {
             Errors::NoNulByte(_) => "No nul byte was present",
             Errors::InvalidUtf8(_) => "Attempt to interpret a sequence of u8 as a String failed",
             Errors::IntError(_) => "The provided number is too large or too small to be processed",
+            Errors::AccessDenied(_code) => {
+                "Process does not exist or the current user lacks privileges"
+            }
         };
         write!(f, "Error: {message}")
     }

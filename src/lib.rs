@@ -5,16 +5,13 @@ pub mod utils;
 
 use std::ptr::{self, addr_of, addr_of_mut};
 
-use windows::{
-    Win32::{
-        Foundation::{CloseHandle, HANDLE, HMODULE},
-        System::{
-            Diagnostics::Debug::{ReadProcessMemory, WriteProcessMemory},
-            ProcessStatus::{EnumProcesses, GetModuleBaseNameA},
-            Threading::{OpenProcess, PROCESS_ALL_ACCESS, PROCESS_QUERY_INFORMATION},
-        },
+use windows::Win32::{
+    Foundation::{CloseHandle, HANDLE, HMODULE},
+    System::{
+        Diagnostics::Debug::{ReadProcessMemory, WriteProcessMemory},
+        ProcessStatus::{EnumProcesses, GetModuleBaseNameA},
+        Threading::{OpenProcess, PROCESS_ALL_ACCESS, PROCESS_QUERY_INFORMATION},
     },
-    core::Error,
 };
 
 use errors::Errors;
@@ -33,30 +30,37 @@ use utils::process_modules;
 ///
 /// # Returns
 ///
-/// * `Ok(HANDLE)` - A valid, open handle to the process if successful.
-/// 
+/// * `Ok(HANDLE)` - A valid handle to the specified process on success.
+///
 /// # Errors
-/// * `Err(Error)` - An error indicating failure, such as if the process does not exist
-///   or the current user lacks sufficient privileges (e.g., `ERROR_ACCESS_DENIED`).
+/// * `Err(Errors::AccessDenied(HRESULT))` - An error containing the Windows System Error Code
+///   (e.g., `5` for `ERROR_ACCESS_DENIED`) if the process cannot be opened.
 ///
-/// # Security Warning
 ///
-/// This function requests **`PROCESS_ALL_ACCESS`**. In modern Windows environments (2026),
-/// this may require the calling process to have `SeDebugPrivilege` enabled or to
-/// be running with Administrative privileges. Excessive permissions may
-/// also trigger Attack Surface Reduction (ASR) rules or EDR alerts.
+/// # Security Considerations
+///
+/// Requesting **`PROCESS_ALL_ACCESS`** is a highly privileged operation.
+/// In modern Windows environments, this call is likely to fail unless:
+/// * The current process is running with **Administrative privileges**.
+/// * The `SeDebugPrivilege` is explicitly enabled in the process token.
+/// * The target process is not protected (e.g., by Anti-Cheat or EDR solutions).
 ///
 /// # Safety
 ///
-/// This function uses an `unsafe` block to call a foreign API. It is considered
-/// a safe wrapper because:
-/// 1. It validates the return value of `OpenProcess`.
-/// 2. It converts the null-handle failure state into a standard Rust [`Result`].
+/// While this function uses `unsafe` internally to invoke the FFI call, it is
+/// exposed as a safe interface because it:
+/// 1. Correctly handles null/invalid handles returned by the OS.
+/// 2. Transforms Win32 error states into a type-safe Rust [`Result`].
 ///
 /// **Note:** The caller is responsible for eventually closing the returned handle
 /// using [`close_handle`] to prevent resource leaks.
-pub fn get_process_handle(pid: u32) -> Result<HANDLE, Error> {
-    unsafe { OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_ALL_ACCESS, false, pid) }
+pub fn get_process_handle(pid: u32) -> Result<HANDLE, Errors<'static>> {
+    unsafe {
+        match OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_ALL_ACCESS, false, pid) {
+            Ok(handle) => Ok(handle),
+            Err(err) => Err(Errors::AccessDenied(err.code())),
+        }
+    }
 }
 
 /// Closes an open object handle.
@@ -104,7 +108,7 @@ pub fn close_handle(handle: HANDLE) {
 ///
 /// * `Ok(ProcessData<String>)` - Contains the handle, PID, and module list
 ///   of the found process.
-/// 
+///
 /// # Errors
 /// * `Err(Errors::ProcessNotFound)` - Returned if no process matches the name
 ///   or if the matching process could not be opened.
@@ -196,10 +200,10 @@ pub fn find_process(process_name: &str) -> Result<ProcessData<String>, Errors<'_
 /// * **Pointer Validity**: The caller must ensure that every step in the offset chain results in a readable memory location within the target process.
 ///
 pub fn read<T: Copy>(handle: HANDLE, addr: usize, offsets: &[u32], buffer: &mut T) {
-    let size = size_of::<usize>();
-    let mut next_addr = 0usize;
-
     unsafe {
+        let size = size_of::<usize>();
+        let mut next_addr = 0usize;
+        
         let _ = ReadProcessMemory(
             handle,
             addr as *const _,

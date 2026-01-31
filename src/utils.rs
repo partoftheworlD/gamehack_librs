@@ -32,7 +32,7 @@ use crate::types::TransformName;
 /// # Returns
 ///
 /// * `Ok(usize)` - The absolute memory address where the signature starts.
-/// 
+///
 /// # Errors
 /// * `Err(Errors::SignatureNotFound)` - If the pattern was not found within the specified range.
 ///
