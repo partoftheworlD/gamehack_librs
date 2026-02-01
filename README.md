@@ -25,10 +25,11 @@ cargo add --git https://github.com/partoftheworlD/gamehack_librs
 use gamehack_librs::{close_handle, find_process, read, utils::find_signature};
 
 fn main() {
-    match find_process("hitman3.exe") {
+    let process_name = "hitman3.exe";
+    match find_process(process_name) {
         Ok(process) => {
             // Get address and size of exe
-            if let Some(exe) = process.module_list.get("hitman3.exe") {
+            if let Some(exe) = process.module_list.get(process_name) {
                 let base = exe.module_addr;
                 let base_size = exe.module_size;
 
@@ -66,12 +67,7 @@ fn main() {
                 // Reading an address without offsets to get RVA of ZHitman5::`vftable':
                 // phitman_vft + 3
 
-                read(
-                    process.handle,
-                    phitman_vft + byte_shift,
-                    &[],
-                    &mut pointer,
-                );
+                read(process.handle, phitman_vft + byte_shift, &[], &mut pointer);
 
                 // OUTPUT:
                 // Hitman VFT: 141D45390
@@ -80,7 +76,7 @@ fn main() {
                 println!(
                     "Sign found: {:X} -> {:X}",
                     phitman_vft + byte_shift,
-                    phitman_vft + byte_shift + size_of_val(&pointer) + pointer as usize
+                    phitman_vft + (byte_shift + size_of_val(&pointer)) + pointer as usize
                 );
             }
 
