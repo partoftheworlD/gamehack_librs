@@ -201,14 +201,13 @@ pub fn find_process(process_name: &str) -> Result<ProcessData<String>, Errors<'_
 ///
 pub fn read<T: Copy>(handle: HANDLE, addr: usize, offsets: &[u32], buffer: &mut T) {
     unsafe {
-        let size = size_of::<usize>();
         let mut next_addr = 0usize;
-        
+
         let _ = ReadProcessMemory(
             handle,
             addr as *const _,
             addr_of_mut!(next_addr).cast(),
-            size,
+            size_of::<usize>(),
             None,
         );
 
