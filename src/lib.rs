@@ -169,7 +169,7 @@ pub fn find_process(process_name: &str) -> Result<ProcessData<String>, Errors<'_
         }
     }
 
-    if process_data.id == 0 {
+    if process_data.is_empty() {
         Err(Errors::ProcessNotFound)
     } else {
         Ok(process_data)

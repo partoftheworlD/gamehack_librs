@@ -83,3 +83,14 @@ impl TransformName for [u8] {
             .to_ascii_lowercase())
     }
 }
+
+/// Represents a container of modules to be processed.
+impl<T> ProcessData<T> {
+    /// Checks if the internal `module_list` of the [`ProcessData`] is empty.
+    ///
+    /// Returns `true` if the number of modules is exactly 0.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.module_list.is_empty()
+    }
+}
