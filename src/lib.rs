@@ -128,6 +128,9 @@ pub fn close_handle(handle: HANDLE) {
 /// Win32 API calls. It relies on [`get_process_handle`] and ensures handles are
 /// managed within the [`ProcessData`] context.
 pub fn find_process(process_name: &str) -> Result<ProcessData<String>, Errors<'_>> {
+    if process_name.is_empty() {
+        return Err(Errors::ProcessNotFound);
+    }
     let mut pid_list = [0u32; 1024];
     let mut cb_needed = 0;
     let mut process_data = ProcessData::default();
