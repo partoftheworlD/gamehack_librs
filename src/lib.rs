@@ -3,7 +3,7 @@ mod tests;
 pub mod types;
 pub mod utils;
 
-use std::ptr::{self, addr_of, addr_of_mut};
+use std::ptr::{self};
 
 use windows::Win32::{
     Foundation::{CloseHandle, HANDLE, HMODULE},
@@ -139,7 +139,7 @@ pub fn find_process(process_name: &str) -> Result<ProcessData<String>, Errors<'_
         let _ = EnumProcesses(
             pid_list.as_mut_ptr().cast(),
             u32::try_from(size_of_val(&pid_list))?,
-            addr_of_mut!(cb_needed),
+            &raw mut cb_needed,
         );
     }
 
@@ -209,7 +209,7 @@ pub fn read<T: Copy>(handle: HANDLE, addr: usize, offsets: &[u32], buffer: &mut 
         let _ = ReadProcessMemory(
             handle,
             addr as *const _,
-            addr_of_mut!(next_addr).cast(),
+            (&raw mut next_addr).cast(),
             size_of::<usize>(),
             None,
         );
@@ -218,14 +218,14 @@ pub fn read<T: Copy>(handle: HANDLE, addr: usize, offsets: &[u32], buffer: &mut 
             let _ = ReadProcessMemory(
                 handle,
                 (next_addr.wrapping_add(offset as usize)) as *const _,
-                addr_of_mut!(next_addr).cast(),
+                (&raw mut next_addr).cast(),
                 size_of::<T>(),
                 None,
             );
         }
 
         ptr::copy_nonoverlapping(
-            (addr_of!(next_addr)).cast::<u8>(),
+            (&raw const next_addr).cast::<u8>(),
             ptr::from_mut(buffer).cast(),
             size_of::<T>(),
         );
@@ -263,7 +263,7 @@ pub fn write<T: Copy + Sized>(handle: HANDLE, addr: usize, value: &T) {
         let _ = WriteProcessMemory(
             handle,
             addr as *const _,
-            addr_of!(value).cast(),
+            (&raw const value).cast(),
             size_of::<T>(),
             None,
         );

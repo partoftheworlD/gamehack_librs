@@ -11,7 +11,7 @@ use crate::{
     errors::Errors,
     types::{ModuleData, ProcessData},
 };
-use std::ptr::{addr_of_mut, null_mut};
+use std::ptr::null_mut;
 
 use crate::types::TransformName;
 
@@ -62,7 +62,7 @@ pub fn find_signature<'a>(
             VirtualQueryEx(
                 handle,
                 Some(address),
-                addr_of_mut!(mbi),
+                &raw mut mbi,
                 size_of::<MEMORY_BASIC_INFORMATION>(),
             );
 
@@ -153,7 +153,7 @@ pub fn process_modules(process_data: &mut ProcessData<String>) {
             handle,
             mod_list.as_mut_ptr().cast(),
             size_of_val(&mod_list) as u32,
-            addr_of_mut!(cb_needed),
+            &raw mut cb_needed,
         );
     }
 
@@ -169,7 +169,7 @@ pub fn process_modules(process_data: &mut ProcessData<String>) {
             let _ = GetModuleInformation(
                 handle,
                 mod_handle,
-                addr_of_mut!(mi),
+                &raw mut mi,
                 size_of::<MODULEINFO>() as u32,
             );
         }
