@@ -157,10 +157,9 @@ pub fn process_modules(process_data: &mut ProcessData<String>) {
         );
     }
 
-    for &mod_handle in mod_list
-        .iter()
-        .take(cb_needed as usize / size_of::<HMODULE>())
-    {
+    let num_modules = cb_needed as usize / size_of::<HMODULE>();
+
+    for &mod_handle in mod_list.iter().take(num_modules) {
         let mut name = [0u8; 256];
         let mut mi = MODULEINFO::default();
 

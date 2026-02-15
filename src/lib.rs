@@ -143,11 +143,11 @@ pub fn find_process(process_name: &str) -> Result<ProcessData<String>, Errors<'_
         );
     }
 
-    let limit = cb_needed as usize / size_of::<u32>();
+    let num_processes = cb_needed as usize / size_of::<u32>();
 
     for (pid, handle) in pid_list
         .iter()
-        .take(limit)
+        .take(num_processes)
         .filter(|&&pid| pid != 0)
         .filter_map(|&pid| get_process_handle(pid).ok().map(|h| (pid, h)))
     {
