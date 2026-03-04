@@ -157,12 +157,11 @@ pub fn find_process(process_name: &str) -> Result<ProcessData<String>, Errors<'_
         unsafe {
             let _ = GetModuleBaseNameA(handle, Some(hmod), &mut module_name);
         }
-
-        if module_name
+        let mn = module_name
             .to_string_lowercase()
-            .unwrap_or("<Module Name>".to_string())
-            == process_name.to_ascii_lowercase()
-        {
+            .unwrap_or("<Module Name>".to_string());
+        
+        if mn == process_name.to_ascii_lowercase() {
             process_data.handle = handle;
             process_data.id = pid;
             process_modules(&mut process_data);
